@@ -3,19 +3,33 @@ package com.coma.study.board.notice;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.coma.study.board.BoardFileDTO;
 import com.coma.study.board.BoardService;
 import com.coma.study.board.BoardVO;
+import com.coma.study.common.file.FileManager;
+import com.coma.study.common.page.Pager;
 
 @Service
 public class NoticeService implements BoardService {
 	@Autowired
 	private NoticeDAO noticeDAO;
+	@Autowired
+	private FileManager fileManager;
+	@Value("${app.upload}")
+	private String upload;
+	@Value("${board.notice}")
+	private String board;
 
 	@Override
-	public List<BoardVO> selectBoardList() throws Exception {
-		return noticeDAO.selectBoardList();
+	public List<BoardVO> selectBoardList(Pager pager) throws Exception {
+		Long totalCount = noticeDAO.selectTotalCount(pager);
+		
+		pager.initPage(totalCount);
+		return noticeDAO.selectBoardList(pager);
 	}
 
 	@Override
@@ -24,18 +38,72 @@ public class NoticeService implements BoardService {
 	}
 
 	@Override
-	public int insertBoard(BoardVO boardVO) throws Exception {
-		return noticeDAO.insertBoard(boardVO);
+	public int insertBoard(BoardVO boardVO, MultipartFile[] boardAttaches) throws Exception {
+		int result = noticeDAO.insertBoard(boardVO);
+		
+		if (boardAttaches == null) return result;
+		for (MultipartFile boardAttach : boardAttaches) {
+			if (boardAttach == null || boardAttach.isEmpty()) continue;
+			
+			// File을 HDD에 저장
+			String fileName = fileManager.fileSave(upload + board, boardAttach);
+			
+			// File 저장 정보를 DB에 저장
+			BoardFileDTO boardFileDTO = new BoardFileDTO();
+			boardFileDTO.setOriginName(boardAttach.getOriginalFilename());
+			boardFileDTO.setSavedName(fileName);
+			boardFileDTO.setBoardNum(boardVO.getBoardNum());
+			noticeDAO.insertBoardAttach(boardFileDTO);
+		}
+		
+		return result;
 	}
 
 	@Override
-	public int updateBoard(BoardVO boardVO) throws Exception {
-		return noticeDAO.updateBoard(boardVO);
+	public int updateBoard(BoardVO boardVO, MultipartFile[] boardAttaches) throws Exception {
+		int result = noticeDAO.updateBoard(boardVO);
+		
+		if (boardAttaches == null) return result;
+		for (MultipartFile boardAttach : boardAttaches) {
+			if (boardAttach == null || boardAttach.isEmpty()) continue;
+			
+			String fileName = fileManager.fileSave(upload + board, boardAttach);
+			
+			BoardFileDTO boardFileDTO = new BoardFileDTO();
+			boardFileDTO.setBoardNum(boardVO.getBoardNum());
+			boardFileDTO.setOriginName(boardAttach.getOriginalFilename());
+			boardFileDTO.setSavedName(fileName);
+			noticeDAO.insertBoardAttach(boardFileDTO);
+		}
+		
+		return result;
 	}
 
 	@Override
 	public int deleteBoard(Long boardNum) throws Exception {
-		return noticeDAO.deleteBoard(boardNum);
+		BoardVO boardVO = new BoardVO();
+		boardVO.setBoardNum(boardNum);
+		
+		boardVO = noticeDAO.selectBoardDetail(boardVO);
+		
+		for (BoardFileDTO boardFileDTO : boardVO.getBoardFileDTOs()) {
+			fileManager.fileDelete(upload + board, boardFileDTO.getSavedName());
+		}
+		
+		int result = noticeDAO.deleteBoardAttach(boardNum);
+		result = noticeDAO.deleteBoard(boardNum);
+		
+		return result;
+	}
+
+	@Override
+	public int deleteBoardFile(BoardFileDTO boardFileDTO) throws Exception {
+		boardFileDTO = noticeDAO.selectBoardAttach(boardFileDTO);
+		boolean success = fileManager.fileDelete(upload + board, boardFileDTO.getSavedName());
+		
+		int result = noticeDAO.deleteBoardAttachOne(boardFileDTO.getFileNum());
+		
+		return result;
 	}
 
 }

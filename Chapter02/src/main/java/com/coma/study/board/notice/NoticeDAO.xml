@@ -5,45 +5,112 @@
 <!-- namespace의 이름은 사용하려는 DAO의 풀패키지명과 동일하게 작성 -->
 <mapper namespace="com.coma.study.board.notice.NoticeDAO">
 	<!-- ID는 DAO의 메서드명과 동일하게 작성 -->
-	<select id="selectBoardList" resultType="NoticeVO">
+	<resultMap type="NoticeVO" id="noticeResultMap">
+		<id property="boardNum" column="board_num" />
+		<result property="boardTitle" column="board_title" />
+		<result property="boardContent" column="board_content" />
+		<result property="boardWriter" column="board_writer" />
+		<result property="boardDate" column="board_date" />
+		<result property="boardHit" column="board_hit" />
+		
+		<collection property="boardFileDTOs" javaType="java.util.List" ofType="BoardFileDTO">
+			<result property="fileNum" column="file_num" />
+			<result property="originName" column="origin_name" />
+			<result property="savedName" column="saved_name" />
+		</collection>
+	</resultMap>
+	
+	<sql id="commonSearch">
+		<where>
+			<choose>
+				<when test="kind == 'k2'">
+					board_content
+				</when>
+				<when test="kind == 'k3'">
+					board_writer
+				</when>
+				<otherwise>
+					board_title
+				</otherwise>
+			</choose>
+			LIKE CONCAT('%', #{ keyword }, '%')
+		</where>		
+	</sql>
+	
+	<select id="selectBoardList" parameterType="Pager" resultType="NoticeVO">
 		SELECT
-				board_num
-			, board_title
-			, board_writer
-			, board_date
-			, board_hit
-		FROM NOTICE
+				*
+		FROM notice
+		<include refid="commonSearch"></include>
 		ORDER BY board_num DESC
+		LIMIT #{startIdx}, #{endIdx}
 	</select>
 	
-	<select id="selectBoardDetail" parameterType="NoticeVO" resultType="NoticeVO">
+	<select id="selectTotalCount" parameterType="Pager" resultType="Long">
+		SELECT
+				COUNT(board_num)
+		FROM notice
+		<include refid="commonSearch"></include>
+	</select>
+	
+	<select id="selectBoardDetail" parameterType="NoticeVO" resultMap="noticeResultMap">
 		SELECT 
 				*
-		FROM NOTICE
+		FROM notice N
+		LEFT OUTER JOIN notice_attach NA USING(board_num)
 		<where>
-			board_num = #{boardNum}
+			N.board_num = #{boardNum}
 		</where>
 	</select>
 	
-	<insert id="insertBoard" parameterType="NoticeVO">
-		INSERT INTO NOTICE (board_title, board_content, board_writer)
+	<select id="selectBoardAttach" parameterType="BoardFileDTO" resultType="BoardFileDTO">
+		SELECT
+				*
+		FROM notice_attach
+		<where>
+			file_num = #{fileNum}
+		</where>
+	</select>
+	
+	<insert id="insertBoard" parameterType="NoticeVO" useGeneratedKeys="true" keyProperty="boardNum">
+		INSERT INTO notice (board_title, board_content, board_writer)
 		VALUE (#{boardTitle}, #{boardContent}, #{boardWriter})
 	</insert>
 	
+	<insert id="insertBoardAttach" parameterType="BoardFileDTO">
+		INSERT INTO notice_attach (board_num, origin_name, saved_name)
+		VALUE (#{boardNum}, #{originName}, #{savedName})
+	</insert>
+	
 	<update id="updateBoard" parameterType="NoticeVO">
-		UPDATE NOTICE
+		UPDATE notice
 		SET 
 				board_title = #{boardTitle}
 			, board_content = #{boardContent}
+			, board_writer = #{boardWriter}
 		<where>
 			board_num = #{boardNum}
 		</where>
 	</update>
 	
 	<delete id="deleteBoard" parameterType="Long">
-		DELETE FROM NOTICE
+		DELETE FROM notice
 		<where>
 			board_num = #{boardNum}
+		</where>
+	</delete>
+	
+	<delete id="deleteBoardAttach" parameterType="Long">
+		DELETE FROM notice_attach
+		<where>
+			board_num = #{boardNum}
+		</where>
+	</delete>
+	
+	<delete id="deleteBoardAttachOne" parameterType="Long">
+		DELETE FROM notice_attach
+		<where>
+			file_num = #{fileNum}
 		</where>
 	</delete>
 </mapper>
