@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"	pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <!DOCTYPE html>
 <html>
 
@@ -22,29 +23,39 @@
               <div class="text-center">
                 <h1 class="h4 text-gray-900 my-5">Create an Account!</h1>
               </div>
-              <form method="POST" enctype="multipart/form-data">
+              <form:form method="POST" modelAttribute="memberDTO" enctype="multipart/form-data">
                 <div class="form-group row">
-                  <div class="col-6">
-                     <input type="text" class="form-control" id="memberId" name="memberId" placeholder="ID">
+                  <div class="col-4">
+                  	<form:input path="memberId" cssClass="form-control" placeholder="ID" />
+                  	<form:errors path="memberId"></form:errors>
                   </div>
-                  <div class="col-6">
-                    <input type="password" class="form-control" id="memberPw" name="memberPw" placeholder="Password">
+                  <div class="col-4">
+                  	<form:password path="memberPw" cssClass="form-control" placeholder="Password" />
+                  	<form:errors path="memberPw"></form:errors>
+                  </div>
+                  <div class="col-4">
+                  	<form:password path="memberPwCheck" cssClass="form-control" placeholder="Password Check" />
+                  	<form:errors path="memberPwCheck"></form:errors>
                   </div>
                 </div>
                 <div class="form-group row">
                   <div class="col-6">
-                    <input type="text" class="form-control" id="memberName" name="memberName" placeholder="Name">
+                  	<form:input path="memberName" cssClass="form-control" placeholder="Name" />
+                  	<form:errors path="memberName"></form:errors>
                   </div>
                   <div class="col-6">
-                  	<input type="date" class="form-control" id="memberBirth" name="memberBirth" >
+                  	<form:input type="date" path="memberBirth" cssClass="form-control" />
+                  	<form:errors path="memberBirth"></form:errors>
                   </div>
                 </div>
                 <div class="form-group row">
                   <div class="col-6">
-                     <input type="text" class="form-control" id="memberEmail" name="memberEmail" placeholder="Email">
+                  	<form:input path="memberEmail" cssClass="form-control" placeholder="Email" />
+                  	<form:errors path="memberEmail"></form:errors>
                   </div>
                   <div class="col-6">
-                  	<input type="text" class="form-control" id="memberPhone" name="memberPhone" placeholder="Phone">
+                  	<form:input path="memberPhone" cssClass="form-control" placeholder="Phone" />
+                  	<form:errors path="memberPhone"></form:errors>
                   </div>
                 </div>
                 <div class="form-group row">
@@ -53,8 +64,8 @@
                 	</div>
                 	<div id="profileBlock" class="col-8"></div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Register Account</button>
-              </form>
+                <form:button type="submit" class="btn btn-primary btn-block">Register Account</form:button>
+              </form:form>
               <hr>
               <div class="text-center">
                 <a class="small" href="#">Forgot Password?</a>
